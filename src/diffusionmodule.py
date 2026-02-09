@@ -127,8 +127,6 @@ class ResnetBlock(nn.Module):
         self.res_conv = nn.Conv2d(dim, dim_out, 1) if dim != dim_out else nn.Identity()
 
     def forward(self, x, time_emb = None):
-        # if time_emb is not None:
-        #     print("x, time_emb", x.shape, time_emb.shape)
         scale_shift = None
         if exists(self.mlp) and exists(time_emb):
             time_emb = self.mlp(time_emb)
@@ -315,9 +313,8 @@ class ConvGRUCell(nn.Module):
         """
         h_cur = self.cur_states[index]
         assert h_cur is not None
-        print(input_tensor.shape, h_cur.shape)
-        if h_cur.shape != input_tensor.shape:
-            h_cur = input_tensor
+        # if h_cur.shape != input_tensor.shape:
+        #     h_cur = input_tensor
         combined = torch.cat([input_tensor, h_cur], dim=1)
         combined_conv = self.conv_gates[index](combined)
 
@@ -337,9 +334,7 @@ class ConvGRUCell(nn.Module):
 
 # model
 class DetNet(nn.Module):
-    """
-    这个模块为论文中的GlobalNet
-    """
+
     def __init__(
         self,
         dim,    # must be same as Unet
@@ -494,13 +489,11 @@ class AttUnet(nn.Module):
         self.final_conv = nn.Conv2d(dim, 1, 1)
 
     def forward(self, x, time, cond=None, ctx=None, idx=None):
-        # print("1", "x", x.shape, "cond", cond.shape)
         x = rearrange(x, 'b t c h w -> b (t c) h w')
         if exists(cond):
             cond = rearrange(cond, 'b t c h w -> b (t c) h w')
         
         cond = default(cond, lambda: torch.zeros_like(x))
-        # print("x", x.shape, "cond", cond.shape)
         x = torch.cat((cond, x), dim = 1)
 
         x = self.init_conv(x)
@@ -510,11 +503,9 @@ class AttUnet(nn.Module):
         f_idx = self.frag_idx_mlp(idx)
 
         t = torch.cat((t, f_idx), dim = 1)
-        # print("t", t)
         h = []
 
         for idx, (block1, block2, attn, downsample) in enumerate(self.downs):
-            # print("idx", idx, ctx[idx].shape)
             x = block1(torch.cat((x, ctx[idx]),dim=1), t)
             h.append(x)
 
